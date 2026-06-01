@@ -15,7 +15,12 @@ export function resetZoyaSession() {
 
 export async function getZoyaResponse(prompt: string, history: { sender: "user" | "zoya", text: string }[] = []): Promise<string> {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== "undefined" ? process.env.GEMINI_API_KEY : "");
+    if (!apiKey) {
+      console.error("VITE_GEMINI_API_KEY is missing in Vercel Environment Variables");
+      return "Zoya needs a Gemini API Key to work! Vercel me VITE_GEMINI_API_KEY set karein.";
+    }
+    const ai = new GoogleGenAI({ apiKey });
     
     if (!chatSession) {
       // SLIDING WINDOW MEMORY: Keep only the last 20 messages to prevent "buffer full" (context window overflow)
@@ -66,7 +71,12 @@ export async function getZoyaResponse(prompt: string, history: { sender: "user" 
 
 export async function getZoyaAudio(text: string): Promise<string | null> {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== "undefined" ? process.env.GEMINI_API_KEY : "");
+    if (!apiKey) {
+      console.error("VITE_GEMINI_API_KEY is missing");
+      return null;
+    }
+    const ai = new GoogleGenAI({ apiKey });
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash-preview-tts",
       contents: [{ parts: [{ text }] }],
