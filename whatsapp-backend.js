@@ -20,8 +20,8 @@
  * 5. Render will automatically detect Node.js, install dependencies, and turn this into a live server.
  */
 
-const express = require('express');
-const cors = require('cors');
+import express from 'express';
+import cors from 'cors';
 
 const app = express();
 app.use(cors());
