@@ -63,9 +63,12 @@ export async function getZoyaResponse(prompt: string, history: { sender: "user" 
 
     const response = await chatSession.sendMessage({ message: prompt });
     return response.text || "Ugh, fine. I have nothing to say.";
-  } catch (error) {
+  } catch (error: any) {
     console.error("Gemini Error:", error);
-    return "Uff, mera dimaag kharab ho gaya hai. Try again later, Ashwani.";
+    if (error?.status === 429 || error?.message?.includes("429") || error?.message?.includes("exceeded your current quota") || error?.status === "RESOURCE_EXHAUSTED") {
+       return "Maaf kijiye, humari API ka quota khatam ho gaya hai. Kripya apna Gemini API plan check karein ya dusri key istemal karein.";
+    }
+    return "Maaf kijiye, main is samay system se connect nahi kar pa rahi hoon. Kripya thodi der mein dobara koshish karein.";
   }
 }
 
