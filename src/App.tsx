@@ -82,9 +82,10 @@ export default function App() {
     };
 
     const runCheckout = async () => {
-      const res = await loadRazorpayScript();
-      if (!res) {
-        alert('Razorpay SDK failed to load. Are you online?');
+      await loadRazorpayScript();
+      
+      if (typeof (window as any).Razorpay === 'undefined') {
+        console.error('Razorpay SDK failed to load properly.');
         return;
       }
       
@@ -95,11 +96,13 @@ export default function App() {
         name: 'GDX CRM',
         description: `${planName} Subscription`,
         handler: function (response: any) {
-          alert("Payment Successful: " + response.razorpay_payment_id);
+          if (response.razorpay_payment_id) {
+            alert("Success! ID: " + response.razorpay_payment_id);
+          }
         },
         modal: {
           ondismiss: function() {
-            console.log('Checkout modal closed by user');
+            console.log("User closed payment gateway interface window securely.");
           }
         },
         prefill: {
@@ -112,8 +115,12 @@ export default function App() {
         }
       };
       
-      const rzp = new (window as any).Razorpay(options);
-      rzp.open();
+      try {
+        const rzp = new (window as any).Razorpay(options);
+        rzp.open();
+      } catch (error) {
+        console.error("Error initializing Razorpay", error);
+      }
     }
     runCheckout();
   };
