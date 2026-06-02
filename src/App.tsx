@@ -71,10 +71,10 @@ export default function App() {
   const [selectedLead, setSelectedLead] = useState<any>(null);
 
   const handleRazorpayCheckout = (planName: string, amount: number, customKey?: string) => {
-    const loadScript = (src: string) => {
+    const loadRazorpayScript = () => {
       return new Promise((resolve) => {
         const script = document.createElement('script');
-        script.src = src;
+        script.src = 'https://checkout.razorpay.com/v1/checkout.js';
         script.onload = () => resolve(true);
         script.onerror = () => resolve(false);
         document.body.appendChild(script);
@@ -82,14 +82,14 @@ export default function App() {
     };
 
     const runCheckout = async () => {
-      const res = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
+      const res = await loadRazorpayScript();
       if (!res) {
         alert('Razorpay SDK failed to load. Are you online?');
         return;
       }
       
       const options = {
-        key: customKey || 'rzp_test_dummykey123',
+        key: customKey || 'rzp_live_SmYI9h1s1WboEw',
         amount: amount * 100, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
         currency: 'INR',
         name: 'GDX CRM',
