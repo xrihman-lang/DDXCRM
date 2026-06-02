@@ -89,13 +89,18 @@ export default function App() {
       }
       
       const options = {
-        key: customKey || 'rzp_live_SmYI9h1s1WboEw',
+        key: 'rzp_live_SmYI9h1s1WboEw',
         amount: amount * 100, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
         currency: 'INR',
         name: 'GDX CRM',
         description: `${planName} Subscription`,
         handler: function (response: any) {
-          alert(`Successfully subscribed to ${planName}! Payment ID: ` + response.razorpay_payment_id);
+          alert("Payment Successful: " + response.razorpay_payment_id);
+        },
+        modal: {
+          ondismiss: function() {
+            console.log('Checkout modal closed by user');
+          }
         },
         prefill: {
           name: 'GDX User',
