@@ -67,6 +67,7 @@ export default function App() {
   const [isConnected, setIsConnected] = useState(() => localStorage.getItem("gdx_is_connected") === "true");
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [showLegalModal, setShowLegalModal] = useState(false);
+  const [showVipModal, setShowVipModal] = useState(false);
   const [isTokenCopied, setIsTokenCopied] = useState(false);
   const [selectedLead, setSelectedLead] = useState<any>(null);
 
@@ -785,6 +786,130 @@ export default function App() {
              </motion.div>
           </motion.div>
         )}
+
+        {/* VIP Modal */}
+        <AnimatePresence>
+         {showVipModal && (
+           <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-md p-4 md:p-8"
+           >
+              <motion.div 
+                 initial={{ scale: 0.95, y: 20 }}
+                 animate={{ scale: 1, y: 0 }}
+                 exit={{ scale: 0.95, y: 20 }}
+                 transition={{ duration: 0.3, ease: 'easeOut' }}
+                 className="bg-white rounded-3xl w-full max-w-5xl mx-auto flex flex-col shadow-2xl relative max-h-[95vh] overflow-hidden border border-gray-200"
+              >
+                 {/* Header */}
+                 <div className="absolute top-0 inset-x-0 h-1.5 bg-gradient-to-r from-yellow-400 via-yellow-200 to-yellow-500 z-20"></div>
+                 
+                 <div className="flex justify-between items-center p-6 md:p-8 border-b border-gray-100 bg-gray-50/50 relative z-10">
+                    <div>
+                        <h3 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
+                            DDX VIP Enterprise Operations
+                        </h3>
+                        <p className="text-sm md:text-base text-gray-500 mt-2 font-medium">Fully Managed "Done-For-You" Automation Ecosystem</p>
+                    </div>
+                    <button onClick={() => setShowVipModal(false)} className="text-gray-400 hover:text-gray-900 transition-colors p-2.5 bg-white border border-gray-200 rounded-full hover:bg-gray-50 shadow-sm shrink-0">
+                       <X size={24} />
+                    </button>
+                 </div>
+
+                 {/* Content */}
+                 <div className="overflow-y-auto overflow-x-hidden flex-1 p-6 md:p-8 bg-white relative z-0 custom-scrollbar text-gray-800">
+                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                         {/* Section 1: Workflow */}
+                         <div className="space-y-8">
+                             <div>
+                                 <h4 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                     <Zap size={20} className="text-yellow-500" />
+                                     Dynamic Workflow Architecture
+                                 </h4>
+                                 <ul className="space-y-4">
+                                     <li className="flex items-start gap-3">
+                                         <div className="w-6 h-6 rounded-full bg-blue-50 flex items-center justify-center shrink-0 mt-0.5">
+                                             <span className="text-blue-600 font-bold text-xs">1</span>
+                                         </div>
+                                         <p className="text-sm leading-relaxed text-gray-600">
+                                             <strong className="text-gray-900 block mb-1">Architectural Design Phase</strong>
+                                             We completely analyze and blueprint your existing business logic, replacing manual tasks with automated triggers and webhook-driven listeners.
+                                         </p>
+                                     </li>
+                                     <li className="flex items-start gap-3">
+                                         <div className="w-6 h-6 rounded-full bg-emerald-50 flex items-center justify-center shrink-0 mt-0.5">
+                                             <span className="text-emerald-600 font-bold text-xs">2</span>
+                                         </div>
+                                         <p className="text-sm leading-relaxed text-gray-600">
+                                             <strong className="text-gray-900 block mb-1">Deep API & Cloud Integration</strong>
+                                             Direct, sub-millisecond connections between Meta's WhatsApp Cloud API, private Google Sheets pipelines, and your proprietary databases.
+                                         </p>
+                                     </li>
+                                      <li className="flex items-start gap-3">
+                                         <div className="w-6 h-6 rounded-full bg-amber-50 flex items-center justify-center shrink-0 mt-0.5">
+                                             <span className="text-amber-600 font-bold text-xs">3</span>
+                                         </div>
+                                         <p className="text-sm leading-relaxed text-gray-600">
+                                             <strong className="text-gray-900 block mb-1">Continuous Operations Management</strong>
+                                             Our dedicated tech ops team actively monitors latency, throughput, and error metrics, applying silent patches and optimizations on your behalf.
+                                         </p>
+                                     </li>
+                                 </ul>
+                             </div>
+                             
+                             {/* Data safety clause */}
+                             <div className="bg-gray-50 border border-gray-200 rounded-2xl p-6">
+                                 <h4 className="text-base font-bold text-gray-900 mb-3 flex items-center gap-2">
+                                    <CheckCircle2 size={18} className="text-emerald-600" />
+                                    Strict Data Safety & Corporate NDA
+                                 </h4>
+                                 <p className="text-sm text-gray-600 leading-relaxed">
+                                     100% Data isolation architecture. For VIP Managed Services, the DDX Team executes a separate corporate Non-Disclosure Agreement (NDA) before integration phase 1 begins, ensuring strict data confidentiality, encrypted webhook transit, and zero third-party sharing.
+                                 </p>
+                             </div>
+                         </div>
+
+                         {/* Section 2: Media Space / Actions */}
+                         <div className="flex flex-col">
+                             {/* Video Placeholder */}
+                             <div className="w-full aspect-video bg-gray-900 rounded-2xl flex flex-col items-center justify-center mb-8 relative overflow-hidden shadow-lg border-2 border-gray-800">
+                                 <div className="absolute inset-0 bg-blue-500/10 mix-blend-overlay"></div>
+                                 <div className="w-16 h-16 bg-white/10 backdrop-blur rounded-full flex items-center justify-center mb-4 transition-transform hover:scale-110 cursor-pointer border border-white/20 shadow-xl">
+                                     <div className="w-0 h-0 border-t-8 border-t-transparent border-l-[14px] border-l-white border-b-8 border-b-transparent ml-1"></div>
+                                 </div>
+                                 <span className="text-white/60 text-sm font-medium tracking-wide">Enterprise Automation Sandbox</span>
+                             </div>
+                             
+                             <div className="mt-auto space-y-4">
+                                 <a 
+                                     href="https://wa.me/918796505884" 
+                                     target="_blank" 
+                                     rel="noreferrer" 
+                                     className="block w-full text-center py-4 rounded-xl border-2 border-blue-100 bg-blue-50 text-blue-700 font-bold hover:bg-blue-100 hover:border-blue-200 transition-colors shadow-sm relative group overflow-hidden"
+                                 >
+                                     <span className="relative z-10 flex items-center justify-center gap-2">
+                                         <ArrowUpRight size={18} /> Test Live AI Operations: +91 87965 05884
+                                     </span>
+                                 </a>
+                                 
+                                 <a 
+                                     href="https://wa.me/917065162279?text=Hello%20DDX%20Team,%20I%20would%20like%20to%20schedule%20a%20professional%20consultation%20regarding%20the%20Fully%20Managed%20Enterprise%20Automation%20Service." 
+                                     target="_blank" 
+                                     rel="noreferrer" 
+                                     className="block w-full text-center py-5 rounded-xl bg-gray-900 text-white font-bold text-lg hover:bg-black transition-all shadow-xl shadow-gray-900/20 active:scale-[0.98]"
+                                 >
+                                      Initialize VIP Partnership Call
+                                 </a>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+              </motion.div>
+           </motion.div>
+         )}
+        </AnimatePresence>
 
         {/* Setup Guide Modal */}
         {showSetupModal && (
@@ -1510,14 +1635,12 @@ export default function App() {
                            <span>Dedicated Daily Operations Manager & Tech Support Staff</span>
                         </li>
                      </ul>
-                     <a 
-                        href="https://wa.me/917065162279?text=Hello%20DDX%20Team,%20I%20am%20interested%20in%20the%20fully%20managed%20Enterprise%20Plan%20for%20my%20business."
-                        target="_blank"
-                        rel="noreferrer"
+                     <button 
+                        onClick={() => setShowVipModal(true)}
                         className="w-full py-4 bg-gray-900 hover:bg-black text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-black/10"
                      >
-                        Book VIP Consultation
-                     </a>
+                        Explore Full VIP Operations Details
+                     </button>
                   </div>
                </div>
 
