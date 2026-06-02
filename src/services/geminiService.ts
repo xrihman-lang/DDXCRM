@@ -64,10 +64,20 @@ export async function getZoyaResponse(prompt: string, history: { sender: "user" 
     const response = await chatSession.sendMessage({ message: prompt });
     return response.text || "Ugh, fine. I have nothing to say.";
   } catch (error: any) {
-    console.error("Gemini Error:", error);
-    if (error?.status === 429 || error?.message?.includes("429") || error?.message?.includes("exceeded your current quota") || error?.status === "RESOURCE_EXHAUSTED") {
+    const errStr = typeof error === 'object' ? JSON.stringify(error) : String(error);
+    if (
+      error?.status === 429 || 
+      error?.code === 429 || 
+      error?.error?.code === 429 || 
+      error?.message?.includes("429") || 
+      errStr.includes("429") || 
+      errStr.includes("exceeded your current quota") || 
+      errStr.includes("RESOURCE_EXHAUSTED")
+    ) {
+       console.warn("Gemini Quota Exceeded (429). Please check your API key and billing details.");
        return "Maaf kijiye, humari API ka quota khatam ho gaya hai. Kripya apna Gemini API plan check karein ya dusri key istemal karein.";
     }
+    console.error("Gemini Error:", error);
     return "Maaf kijiye, main is samay system se connect nahi kar pa rahi hoon. Kripya thodi der mein dobara koshish karein.";
   }
 }
@@ -93,7 +103,20 @@ export async function getZoyaAudio(text: string): Promise<string | null> {
       },
     });
     return response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data || null;
-  } catch (error) {
+  } catch (error: any) {
+    const errStr = typeof error === 'object' ? JSON.stringify(error) : String(error);
+    if (
+      error?.status === 429 || 
+      error?.code === 429 || 
+      error?.error?.code === 429 || 
+      error?.message?.includes("429") || 
+      errStr.includes("429") || 
+      errStr.includes("exceeded your current quota") || 
+      errStr.includes("RESOURCE_EXHAUSTED")
+    ) {
+       console.warn("TTS Quota Exceeded (429).");
+       return null;
+    }
     console.error("TTS Error:", error);
     return null;
   }

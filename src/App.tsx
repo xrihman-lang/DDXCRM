@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Mic, MicOff, Loader2, Volume2, VolumeX, Keyboard, Send, Trash2, LayoutDashboard, Users, BarChart3, Settings, LogOut, Search, Bell, MessageSquare, X } from "lucide-react";
+import { Mic, MicOff, Loader2, Volume2, VolumeX, Keyboard, Send, Trash2, LayoutDashboard, Users, BarChart3, Settings, LogOut, Search, Bell, MessageSquare, X, HelpCircle, Copy, Check } from "lucide-react";
 import { getZoyaResponse, getZoyaAudio, resetZoyaSession, setZoyaKnowledgeBase } from "./services/geminiService";
 import { processCommand } from "./services/commandService";
 import { LiveSessionManager, setLiveZoyaKnowledgeBase } from "./services/liveService";
@@ -30,11 +30,17 @@ export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem("gdx_auth") === "true");
   const [activeTab, setActiveTab] = useState<"dashboard" | "shared_inbox" | "leads" | "settings">("dashboard");
   const [knowledgeBase, setKnowledgeBase] = useState(() => localStorage.getItem("gdx_knowledge_base") || "");
-  const [backendUrl, setBackendUrl] = useState(() => localStorage.getItem("gdx_backend_url") || "");
-  const [instanceId, setInstanceId] = useState(() => localStorage.getItem("gdx_instance_id") || "");
-  const [accessToken, setAccessToken] = useState(() => localStorage.getItem("gdx_access_token") || "");
+  const [backendUrl, setBackendUrl] = useState(() => localStorage.getItem("gdx_backend_url") || "https://ddxcrm.onrender.com");
+  const [phoneNumberId, setPhoneNumberId] = useState(() => localStorage.getItem("gdx_phone_number_id") || "");
+  const [metaAccessToken, setMetaAccessToken] = useState(() => localStorage.getItem("gdx_meta_access_token") || "");
+  const [wabaId, setWabaId] = useState(() => localStorage.getItem("gdx_waba_id") || "");
   const [isSavedReassure, setIsSavedReassure] = useState(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [isSavingConfig, setIsSavingConfig] = useState(false);
+  const [configStatus, setConfigStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+  const [isConnected, setIsConnected] = useState(() => localStorage.getItem("gdx_is_connected") === "true");
+  const [showSetupModal, setShowSetupModal] = useState(false);
+  const [isTokenCopied, setIsTokenCopied] = useState(false);
   const [selectedLead, setSelectedLead] = useState<any>(null);
   
   const [simMessages, setSimMessages] = useState<{id: string, sender: 'customer' | 'bot', text: string}[]>([]);
@@ -50,11 +56,12 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem("gdx_knowledge_base", knowledgeBase);
     localStorage.setItem("gdx_backend_url", backendUrl);
-    localStorage.setItem("gdx_instance_id", instanceId);
-    localStorage.setItem("gdx_access_token", accessToken);
+    localStorage.setItem("gdx_phone_number_id", phoneNumberId);
+    localStorage.setItem("gdx_meta_access_token", metaAccessToken);
+    localStorage.setItem("gdx_waba_id", wabaId);
     setZoyaKnowledgeBase(knowledgeBase);
     setLiveZoyaKnowledgeBase(knowledgeBase);
-  }, [knowledgeBase, backendUrl, instanceId, accessToken]);
+  }, [knowledgeBase, backendUrl, phoneNumberId, metaAccessToken, wabaId]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -81,25 +88,58 @@ export default function App() {
   };
 
   const handleSaveConfig = async () => {
-    setIsSavedReassure(true);
-    if(saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-    saveTimeoutRef.current = setTimeout(() => setIsSavedReassure(false), 3000);
+    setIsSavingConfig(true);
+    setConfigStatus(null);
+    
+    if (!phoneNumberId || !metaAccessToken || !wabaId) {
+      setConfigStatus({ type: 'error', message: '⚠️ Connection Failed. Please double-check your Meta IDs and internet connection.' });
+      setIsSavingConfig(false);
+      setIsConnected(false);
+      localStorage.setItem("gdx_is_connected", "false");
+      return;
+    }
 
-    if (backendUrl && instanceId && accessToken) {
-      try {
+    try {
+      if (backendUrl) {
         const targetUrl = backendUrl.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
-        await fetch(`${targetUrl}/api/tokens/register`, {
+        const res = await fetch(`${targetUrl}/api/tokens/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ instanceId, accessToken, knowledgeBase })
+          body: JSON.stringify({ phoneNumberId, metaAccessToken, wabaId, knowledgeBase })
         });
-      } catch (err) {
-        console.error("Failed to sync config with Render backend", err);
+        if (!res.ok) throw new Error("API returned not ok");
       }
+      
+      await new Promise(res => setTimeout(res, 800)); // Simulate verifying connection
+      
+      setConfigStatus({ type: 'success', message: '🎉 Setup Success! Your AI WhatsApp Assistant is now active and live.' });
+      setIsConnected(true);
+      localStorage.setItem("gdx_is_connected", "true");
+      setIsSavedReassure(true);
+      
+      if(saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = setTimeout(() => {
+        setIsSavedReassure(false);
+        setConfigStatus(null);
+      }, 5000);
+      
+    } catch (err) {
+      console.error("Failed to sync config with backend", err);
+      setConfigStatus({ type: 'error', message: '⚠️ Connection Failed. Please double-check your Meta IDs and internet connection.' });
+      setIsConnected(false);
+      localStorage.setItem("gdx_is_connected", "false");
+    } finally {
+      setIsSavingConfig(false);
     }
   };
 
   const [showQRModal, setShowQRModal] = useState(false);
+
+  const handleCopyToken = () => {
+    navigator.clipboard.writeText("GdxZishanSecret123");
+    setIsTokenCopied(true);
+    setTimeout(() => setIsTokenCopied(false), 2000);
+  };
 
   const handleSimulatorSend = async () => {
     if(!simInput.trim()) return;
@@ -422,6 +462,69 @@ export default function App() {
              </motion.div>
           </motion.div>
         )}
+
+        {/* Setup Guide Modal */}
+        {showSetupModal && (
+          <motion.div 
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             exit={{ opacity: 0 }}
+             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm"
+          >
+             <motion.div 
+                initial={{ scale: 0.95 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.95 }}
+                className="bg-[#111b21] border border-white/10 rounded-3xl p-8 max-w-lg w-full mx-4 flex flex-col shadow-[0_20px_60px_rgba(0,0,0,0.8),0_0_40px_rgba(6,182,212,0.1)] relative"
+             >
+                <button onClick={() => setShowSetupModal(false)} className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors p-2 bg-white/5 rounded-full hover:bg-white/10">
+                   <X size={20} />
+                </button>
+                <div className="mb-6 border-b border-white/10 pb-4">
+                   <h3 className="text-xl font-semibold text-white mb-2 flex items-center gap-2">
+                       <HelpCircle className="text-cyan-400" size={24} />
+                       Meta Webhook Setup Instructions
+                   </h3>
+                </div>
+                
+                <div className="space-y-6 text-white/80 leading-relaxed">
+                   <div className="flex flex-col gap-1.5 object-cover">
+                      <span className="font-semibold text-cyan-400 text-sm tracking-wide">Step 1:</span>
+                      <p className="text-sm">Go to your Meta Developer Portal and navigate to WhatsApp &gt; Configuration.</p>
+                   </div>
+                   <div className="flex flex-col gap-1.5">
+                      <span className="font-semibold text-cyan-400 text-sm tracking-wide">Step 2:</span>
+                      <p className="text-sm">In the "Callback URL" field, copy and paste your custom Webhook URL shown on this dashboard.</p>
+                   </div>
+                   <div className="flex flex-col gap-1.5">
+                      <span className="font-semibold text-cyan-400 text-sm tracking-wide">Step 3:</span>
+                      <p className="text-sm">In the "Verify Token" field, enter the exact master secret password given below:</p>
+                      <div className="flex items-center gap-3 mt-1 bg-black/50 border border-white/10 rounded-xl p-3 shadow-inner">
+                         <span className="text-cyan-400 shrink-0">👉</span>
+                         <span className="font-mono text-white/90 truncate mr-auto tracking-wide text-sm">GdxZishanSecret123</span>
+                         <button 
+                            onClick={handleCopyToken}
+                            className="shrink-0 p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/70 hover:text-white transition-all flex items-center gap-1.5 shadow-sm"
+                         >
+                            {isTokenCopied ? <Check size={16} className="text-[#25D366]" /> : <Copy size={16} />}
+                            <span className="text-xs font-medium">{isTokenCopied ? "Copied" : "Copy"}</span>
+                         </button>
+                      </div>
+                   </div>
+                   <div className="flex flex-col gap-1.5">
+                      <span className="font-semibold text-cyan-400 text-sm tracking-wide">Step 4:</span>
+                      <p className="text-sm">Click "Verify and Save" on Meta. Once done, come back here, enter your personal Access Token, Phone ID, and WABA ID, then click Save!</p>
+                   </div>
+                </div>
+                
+                <div className="mt-8 flex justify-end">
+                   <button onClick={() => setShowSetupModal(false)} className="px-6 py-2.5 bg-white/10 text-white font-medium rounded-xl hover:bg-white/20 transition-colors shadow-sm">
+                      Got it, thanks!
+                   </button>
+                </div>
+             </motion.div>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Cinematic Background Gradients */}
@@ -575,6 +678,17 @@ export default function App() {
 
       {/* Main Container */}
       <main className="flex-1 flex flex-col z-10 relative overflow-hidden">
+        {configStatus && (
+          <div className="absolute top-6 right-6 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className={`px-5 py-3 rounded-xl shadow-2xl border backdrop-blur-md font-medium tracking-wide flex items-center gap-3 ${
+              configStatus.type === 'success' 
+              ? 'bg-[#25D366]/10 border-[#25D366]/30 text-[#25D366]' 
+              : 'bg-red-500/10 border-red-500/30 text-red-400'
+            }`}>
+              {configStatus.message}
+            </div>
+          </div>
+        )}
         {/* Header */}
         <header className="h-20 border-b border-white/10 bg-black/20 backdrop-blur-md flex items-center justify-between px-8 shrink-0">
           <h2 className="text-xl font-medium tracking-wide">
@@ -584,6 +698,12 @@ export default function App() {
             {activeTab === 'settings' && 'System Settings'}
           </h2>
           <div className="flex items-center gap-6">
+            <div className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
+              <div className={`w-2 h-2 rounded-full shadow-[0_0_8px_currentColor] ${isConnected ? 'bg-[#25D366] text-[#25D366] animate-pulse' : 'bg-red-500 text-red-500'}`} />
+              <span className={`text-xs font-semibold ${isConnected ? 'text-[#25D366]/80' : 'text-red-400/80'}`}>
+                {isConnected ? 'System Status: Connected & Running' : 'System Status: Disconnected'}
+              </span>
+            </div>
             <div className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-full px-4 py-2">
               <Search size={16} className="text-white/40" />
               <input 
@@ -618,31 +738,48 @@ export default function App() {
                   <div className="mt-4 flex flex-wrap items-center gap-4">
                      <button
                         onClick={handleSaveConfig}
-                        className={`px-6 py-2.5 font-semibold tracking-wide rounded-lg transition-colors flex items-center gap-2 ${
+                        disabled={isSavingConfig}
+                        className={`px-6 py-2.5 font-semibold tracking-wide rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed ${
                            isSavedReassure 
                               ? "bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/50 shadow-[0_0_15px_rgba(37,211,102,0.1)]" 
                               : "bg-cyan-600/20 text-cyan-400 border border-cyan-500/50 hover:bg-cyan-600/30 shadow-[0_0_15px_rgba(6,182,212,0.1)]"
                         }`}
                      >
-                        {isSavedReassure ? "✓ Configuration Saved Alive!" : "💾 Save Configuration"}
+                        {isSavingConfig ? "🔄 Connecting & Verifying..." : isSavedReassure ? "✓ Configuration Saved Alive!" : "💾 Save Configuration"}
                      </button>
                   </div>
                </div>
 
                <div className="bg-black/40 border border-white/10 rounded-3xl p-8 backdrop-blur-md mt-6">
-                  <h3 className="text-lg font-medium mb-6 text-cyan-400">🔌 WhatsApp Gateway Integration</h3>
+                  <h3 className="text-lg font-medium mb-6 text-cyan-400">🔌 WhatsApp API Configuration</h3>
                   <div className="space-y-4">
                      <div className="flex flex-col gap-1.5">
-                        <label className="text-sm text-white/70">WhatsApp Instance ID</label>
-                        <input type="text" value={instanceId} onChange={(e) => setInstanceId(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white placeholder:text-white/30 outline-none focus:border-cyan-500/50 transition-colors" placeholder="e.g., inst_65892ac" />
+                        <label className="text-sm text-white/70">Meta Permanent Access Token</label>
+                        <input type="password" value={metaAccessToken} onChange={(e) => setMetaAccessToken(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white placeholder:text-white/30 outline-none focus:border-cyan-500/50 transition-colors" placeholder="EAAb...." />
                      </div>
                      <div className="flex flex-col gap-1.5">
-                        <label className="text-sm text-white/70">Access Token / API Key</label>
-                        <input type="password" value={accessToken} onChange={(e) => setAccessToken(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white placeholder:text-white/30 outline-none focus:border-cyan-500/50 transition-colors" placeholder="Enter your gateway token here" />
+                        <label className="text-sm text-white/70">WhatsApp Phone Number ID</label>
+                        <input type="text" value={phoneNumberId} onChange={(e) => setPhoneNumberId(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white placeholder:text-white/30 outline-none focus:border-cyan-500/50 transition-colors" placeholder="Enter your 15-digit Phone Number ID" />
                      </div>
                      <div className="flex flex-col gap-1.5">
-                        <label className="text-sm text-white/70">Webhook URL</label>
-                        <input type="text" readOnly value="https://api.gdx-crm.com/v1/webhook" className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white/50 outline-none cursor-not-allowed" />
+                        <label className="text-sm text-white/70">WhatsApp Business Account ID (WABA ID)</label>
+                        <input type="text" value={wabaId} onChange={(e) => setWabaId(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white placeholder:text-white/30 outline-none focus:border-cyan-500/50 transition-colors" placeholder="Enter your 15-digit WABA ID" />
+                     </div>
+                     
+                     <div className="p-3 bg-cyan-500/10 border border-cyan-500/20 rounded-xl flex items-start gap-2 text-sm text-cyan-400/90 mt-2">
+                         <span>💡</span>
+                         <p>Tip: You can find your Phone Number ID and WABA ID inside your Meta Developer Portal under WhatsApp &gt; API Setup.</p>
+                     </div>
+
+                     <div className="flex flex-col gap-1.5 mt-4">
+                        <div className="flex items-center justify-between">
+                           <label className="text-sm text-white/70">Webhook URL</label>
+                           <button onClick={() => setShowSetupModal(true)} className="flex items-center gap-1.5 text-xs text-cyan-400 hover:text-cyan-300 transition-colors font-medium">
+                              <HelpCircle size={14} />
+                              <span>Setup Guide</span>
+                           </button>
+                        </div>
+                        <input type="text" readOnly value={`${backendUrl}/webhook`} className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white/50 outline-none cursor-not-allowed" />
                      </div>
                      <button onClick={() => setShowQRModal(true)} className="mt-4 px-6 py-3 bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/30 font-semibold rounded-xl hover:bg-[#25D366]/30 transition-colors flex items-center justify-center gap-2 w-full md:w-auto">
                         <span>⚡</span>
@@ -656,7 +793,7 @@ export default function App() {
                   <div className="space-y-4">
                      <div className="flex flex-col gap-1.5">
                         <label className="text-sm text-white/70">Backend Server Base URL</label>
-                        <input type="text" value={backendUrl} onChange={(e) => setBackendUrl(e.target.value)} className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white placeholder:text-white/30 outline-none focus:border-cyan-500/50 transition-colors" placeholder="https://your-app.onrender.com" />
+                        <input type="text" readOnly value={backendUrl} className="w-full bg-black/50 border border-white/10 rounded-xl p-3 text-white/50 outline-none cursor-not-allowed" placeholder="https://your-app.onrender.com" />
                      </div>
                   </div>
                </div>

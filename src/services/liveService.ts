@@ -182,15 +182,41 @@ export class LiveSessionManager {
             console.log("Live API Closed");
             this.stop();
           },
-          onerror: (err) => {
-            console.error("Live API Error:", err);
+          onerror: (err: any) => {
+            const errStr = typeof err === 'object' ? JSON.stringify(err) : String(err);
+            if (
+              err?.status === 429 || 
+              err?.code === 429 || 
+              err?.error?.code === 429 || 
+              err?.message?.includes("429") || 
+              errStr.includes("429") || 
+              errStr.includes("exceeded your current quota") || 
+              errStr.includes("RESOURCE_EXHAUSTED")
+            ) {
+              console.warn("Live API Quota Exceeded (429).");
+            } else {
+              console.error("Live API Error:", err);
+            }
             this.stop();
           }
         }
       });
 
-    } catch (error) {
-      console.error("Failed to start Live Session:", error);
+    } catch (error: any) {
+      const errStr = typeof error === 'object' ? JSON.stringify(error) : String(error);
+      if (
+        error?.status === 429 || 
+        error?.code === 429 || 
+        error?.error?.code === 429 || 
+        error?.message?.includes("429") || 
+        errStr.includes("429") || 
+        errStr.includes("exceeded your current quota") || 
+        errStr.includes("RESOURCE_EXHAUSTED")
+      ) {
+        console.warn("Failed to start Live Session: Quota Exceeded (429)");
+      } else {
+        console.error("Failed to start Live Session:", error);
+      }
       this.stop();
     }
   }
