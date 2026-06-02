@@ -66,6 +66,7 @@ export default function App() {
   const [configStatus, setConfigStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
   const [isConnected, setIsConnected] = useState(() => localStorage.getItem("gdx_is_connected") === "true");
   const [showSetupModal, setShowSetupModal] = useState(false);
+  const [showLegalModal, setShowLegalModal] = useState(false);
   const [isTokenCopied, setIsTokenCopied] = useState(false);
   const [selectedLead, setSelectedLead] = useState<any>(null);
 
@@ -701,6 +702,63 @@ export default function App() {
           </motion.div>
         )}
 
+        {/* Legal & Policies Modal */}
+        {showLegalModal && (
+          <motion.div 
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             exit={{ opacity: 0 }}
+             className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
+          >
+             <motion.div 
+                initial={{ scale: 0.95 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.95 }}
+                className="bg-[#111b21] border border-white/10 rounded-3xl p-8 max-w-2xl w-full mx-4 flex flex-col shadow-[0_20px_60px_rgba(0,0,0,0.8),0_0_40px_rgba(6,182,212,0.1)] relative max-h-[85vh] overflow-hidden"
+             >
+                <button onClick={() => setShowLegalModal(false)} className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors p-2 bg-white/5 rounded-full hover:bg-white/10 z-10">
+                   <X size={20} />
+                </button>
+                <div className="mb-6 border-b border-white/10 pb-4 shrink-0">
+                   <h3 className="text-2xl font-semibold text-white flex items-center gap-2">
+                       Legal & Policies
+                   </h3>
+                   <p className="text-sm text-white/50 mt-1">Compliance terms required for Razorpay merchant guidelines.</p>
+                </div>
+
+                <div className="overflow-y-auto custom-scrollbar flex-1 pr-4 space-y-8">
+                   <div>
+                      <h4 className="text-lg font-medium text-cyan-400 mb-2">Privacy Policy</h4>
+                      <p className="text-sm text-white/70 leading-relaxed">
+                         We collect user registration data, email, and WhatsApp business API details securely to provide automated CRM services. We never share user data with third parties.
+                      </p>
+                   </div>
+                   
+                   <div>
+                      <h4 className="text-lg font-medium text-cyan-400 mb-2">Terms & Conditions</h4>
+                      <p className="text-sm text-white/70 leading-relaxed">
+                         The service is provided as a monthly/annual SaaS subscription for automated WhatsApp notifications. Users are responsible for complying with Meta's official commerce policies.
+                      </p>
+                   </div>
+                   
+                   <div>
+                      <h4 className="text-lg font-medium text-cyan-400 mb-2">Refund & Cancellation Policy</h4>
+                      <p className="text-sm text-white/70 leading-relaxed">
+                         We offer a 7-day free trial for users to test the product. Once a paid subscription is processed via Razorpay, cancellations can be requested anytime, but refunds for the current billing cycle will not be provided. For custom setup services, the one-time fee is completely non-refundable.
+                      </p>
+                   </div>
+
+                   <div className="bg-white/5 border border-white/10 rounded-2xl p-5 mb-4">
+                      <h4 className="text-base font-medium text-white mb-2">Contact Us</h4>
+                      <p className="text-sm text-white/70 leading-relaxed">
+                         For support, billing issues, or policy queries, contact us on WhatsApp: +91 7065162279
+                      </p>
+                   </div>
+                </div>
+             </motion.div>
+          </motion.div>
+        )}
+
         {/* Setup Guide Modal */}
         {showSetupModal && (
           <motion.div 
@@ -925,6 +983,12 @@ export default function App() {
             <LogOut size={16} />
             <span>Logout</span>
           </button>
+
+          <div className="mt-4 pt-4 border-t border-white/5 flex flex-col gap-2 px-2">
+            <button onClick={() => setShowLegalModal(true)} className="text-[10px] text-white/40 hover:text-cyan-400 text-left transition-colors font-medium">Privacy Policy</button>
+            <button onClick={() => setShowLegalModal(true)} className="text-[10px] text-white/40 hover:text-cyan-400 text-left transition-colors font-medium">Terms & Conditions</button>
+            <button onClick={() => setShowLegalModal(true)} className="text-[10px] text-white/40 hover:text-cyan-400 text-left transition-colors font-medium">Refund & Cancellation Policy</button>
+          </div>
         </div>
       </aside>
 
