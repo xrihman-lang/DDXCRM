@@ -1365,36 +1365,6 @@ export default function App() {
                   </div>
                </div>
 
-               <div className="bg-black/40 border border-white/10 rounded-3xl p-8 backdrop-blur-md mt-6">
-                  <h3 className="text-lg font-medium mb-4 text-cyan-400">⚖️ Legal & Compliance</h3>
-                  
-                  <div className="space-y-6 text-sm text-white/80">
-                     <div className="bg-black/30 p-5 rounded-2xl border border-white/5">
-                        <h4 className="text-white font-medium mb-3 text-base flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> Privacy Policy</h4>
-                        <ul className="list-none space-y-3">
-                           <li className="pl-4 border-l-2 border-white/10 leading-relaxed"><strong className="text-white font-medium">Data Collection:</strong> We securely store user-provided Meta Access Tokens, Phone Number IDs, and Business Knowledge Base data solely to process automated WhatsApp responses via Google Gemini API.</li>
-                           <li className="pl-4 border-l-2 border-white/10 leading-relaxed"><strong className="text-white font-medium">Data Protection:</strong> No chat logs, customer phone numbers, or private tokens are shared, sold, or exposed to third parties. All API communications are encrypted.</li>
-                        </ul>
-                     </div>
-
-                     <div className="bg-black/30 p-5 rounded-2xl border border-white/5">
-                        <h4 className="text-white font-medium mb-3 text-base flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> Terms of Service & Usage Policy</h4>
-                        <ul className="list-none space-y-3">
-                           <li className="pl-4 border-l-2 border-white/10 leading-relaxed"><strong className="text-white font-medium">Compliance:</strong> Users must comply with Meta's Official WhatsApp Business Policy. Any misuse, spamming, or sending unauthorized bulk messages that leads to number suspension is the sole responsibility of the user. GDX Automation will not be liable for account bans.</li>
-                           <li className="pl-4 border-l-2 border-white/10 leading-relaxed"><strong className="text-white font-medium">API Fair Use:</strong> Users must provide valid Google Gemini and Meta API credentials.</li>
-                        </ul>
-                     </div>
-
-                     <div className="bg-black/30 p-5 rounded-2xl border border-white/5">
-                        <h4 className="text-white font-medium mb-3 text-base flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span> Payment & Refund Policy (Upcoming Integration)</h4>
-                        <ul className="list-none space-y-3">
-                           <li className="pl-4 border-l-2 border-white/10 leading-relaxed"><strong className="text-white font-medium">Subscription Model:</strong> The service will operate on a monthly/annual prepaid subscription basis (Basic at ₹5,000/mo and Premium at ₹15,000/mo).</li>
-                           <li className="pl-4 border-l-2 border-white/10 leading-relaxed"><strong className="text-white font-medium">Cancellation:</strong> Users can cancel their subscription at any time from their profile billing section.</li>
-                           <li className="pl-4 border-l-2 border-white/10 leading-relaxed"><strong className="text-white font-medium">Refund Policy:</strong> Since we provide a digital SaaS infrastructure and free preview tokens during setup, all paid subscription fees are non-refundable.</li>
-                        </ul>
-                     </div>
-                  </div>
-               </div>
                
                <VipSetupBanner />
             </div>
