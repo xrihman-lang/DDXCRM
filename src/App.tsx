@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Mic, MicOff, Loader2, Volume2, VolumeX, Keyboard, Send, Trash2, LayoutDashboard, Users, BarChart3, Settings, LogOut, Search, Bell, MessageSquare, X, HelpCircle, Copy, Check, FileText, PlusCircle } from "lucide-react";
+import { Mic, MicOff, Loader2, Volume2, VolumeX, Keyboard, Send, Trash2, LayoutDashboard, Users, BarChart3, Settings, LogOut, Search, Bell, MessageSquare, X, HelpCircle, Copy, Check, FileText, PlusCircle, CreditCard, ExternalLink } from "lucide-react";
 import { getZoyaResponse, getZoyaAudio, resetZoyaSession, setZoyaKnowledgeBase } from "./services/geminiService";
 import { processCommand } from "./services/commandService";
 import { LiveSessionManager, setLiveZoyaKnowledgeBase } from "./services/liveService";
@@ -25,10 +25,36 @@ declare global {
   }
 }
 
+const VipSetupBanner = () => (
+  <div className="mt-8 bg-gradient-to-r from-[#25D366]/10 to-transparent border border-[#25D366]/20 rounded-3xl p-8 relative overflow-hidden">
+    <div className="absolute -right-20 -top-20 w-64 h-64 bg-[#25D366]/5 rounded-full blur-3xl"></div>
+    <h3 className="text-xl font-semibold text-white mb-3 flex items-center gap-2">
+      ⚙️ Professional Meta API Setup Service
+    </h3>
+    <p className="text-sm text-white/70 mb-4 leading-relaxed max-w-2xl">
+      Facing issues with Meta Developer Portal, Webhooks, or Token generation? Let our expert handle 100% of the configuration and verification for you!
+      <br /><br />
+      <span className="text-white/50 text-xs uppercase tracking-wider font-semibold">Note: This is a premium white-glove service and carries an additional setup fee.</span>
+    </p>
+    <div className="flex items-center gap-4 mt-6">
+      <span className="text-sm font-medium text-white/60">📞 Contact our Deployment Engineer directly on WhatsApp:</span>
+      <a
+        href="https://wa.me/917065162279"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex items-center gap-2 px-6 py-3 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/30 rounded-full transition-all shadow-[0_0_15px_rgba(37,211,102,0.15)] hover:shadow-[0_0_25px_rgba(37,211,102,0.3)] font-semibold"
+      >
+        <MessageSquare size={18} />
+        +91 7065162279
+      </a>
+    </div>
+  </div>
+);
+
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem("gdx_auth") === "true");
-  const [activeTab, setActiveTab] = useState<"dashboard" | "shared_inbox" | "leads" | "settings" | "templates">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "shared_inbox" | "leads" | "settings" | "templates" | "billing">("dashboard");
   const [knowledgeBase, setKnowledgeBase] = useState(() => localStorage.getItem("gdx_knowledge_base") || "");
   const [backendUrl, setBackendUrl] = useState(() => localStorage.getItem("gdx_backend_url") || "https://ddxcrm.onrender.com");
   const [phoneNumberId, setPhoneNumberId] = useState(() => localStorage.getItem("gdx_phone_number_id") || "");
@@ -42,6 +68,49 @@ export default function App() {
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [isTokenCopied, setIsTokenCopied] = useState(false);
   const [selectedLead, setSelectedLead] = useState<any>(null);
+
+  const handleRazorpayCheckout = (planName: string, amount: number, customKey?: string) => {
+    const loadScript = (src: string) => {
+      return new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.body.appendChild(script);
+      });
+    };
+
+    const runCheckout = async () => {
+      const res = await loadScript('https://checkout.razorpay.com/v1/checkout.js');
+      if (!res) {
+        alert('Razorpay SDK failed to load. Are you online?');
+        return;
+      }
+      
+      const options = {
+        key: customKey || 'rzp_test_dummykey123',
+        amount: amount * 100, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
+        currency: 'INR',
+        name: 'GDX CRM',
+        description: `${planName} Subscription`,
+        handler: function (response: any) {
+          alert(`Successfully subscribed to ${planName}! Payment ID: ` + response.razorpay_payment_id);
+        },
+        prefill: {
+          name: 'GDX User',
+          email: 'user@example.com',
+          contact: '9999999999'
+        },
+        theme: {
+          color: '#06b6d4' // cyan-500
+        }
+      };
+      
+      const rzp = new (window as any).Razorpay(options);
+      rzp.open();
+    }
+    runCheckout();
+  };
 
   // WhatsApp Templates States
   const [templates, setTemplates] = useState<{name: string, category: string, language: string, bodyText: string}[]>(() => {
@@ -750,6 +819,13 @@ export default function App() {
             <Settings size={18} />
             <span className="font-medium text-sm">Settings</span>
           </button>
+          <button 
+            onClick={() => setActiveTab("billing")}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'billing' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'hover:bg-white/5 text-white/70 hover:text-white border border-transparent'}`}
+          >
+            <CreditCard size={18} />
+            <span className="font-medium text-sm">Billing</span>
+          </button>
 
           <div className="mt-auto pt-6">
              <div className="bg-black/80 backdrop-blur-xl border border-cyan-500/30 rounded-2xl p-4 flex flex-col gap-4 shadow-[0_10px_40px_rgba(0,0,0,0.5),0_0_20px_rgba(6,182,212,0.15)] relative">
@@ -873,6 +949,7 @@ export default function App() {
             {activeTab === 'leads' && 'Active Leads'}
             {activeTab === 'templates' && 'WhatsApp Templates'}
             {activeTab === 'settings' && 'System Settings'}
+            {activeTab === 'billing' && 'Billing & Premium Setup'}
           </h2>
           <div className="flex items-center gap-6">
             <div className="hidden lg:flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
@@ -1253,6 +1330,121 @@ export default function App() {
                         </ul>
                      </div>
                   </div>
+               </div>
+               
+               <VipSetupBanner />
+            </div>
+          )}
+
+          {activeTab === 'billing' && (
+            <div className="p-8 font-sans max-w-6xl mx-auto">
+               <div className="mb-10 text-center">
+                  <h2 className="text-3xl font-bold tracking-tight text-white flex items-center justify-center gap-3">
+                     <CreditCard className="text-cyan-400" size={32} />
+                     Pricing Plans
+                  </h2>
+                  <p className="text-sm text-white/50 mt-3 max-w-xl mx-auto">
+                     Choose the perfect plan to scale your WhatsApp marketing and automation. Manage your subscription, view active plans, and request expert setup assistance.
+                  </p>
+               </div>
+
+               <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+                  {/* Starter Plan */}
+                  <div className="bg-black/45 border border-white/10 rounded-3xl p-8 backdrop-blur-md flex flex-col relative transition-all duration-300 hover:border-white/20">
+                     <div className="mb-8">
+                        <h3 className="text-xl font-medium text-white/80 mb-2">Starter</h3>
+                        <div className="text-4xl font-bold text-white flex items-baseline gap-1">
+                           <span className="text-2xl text-white/50">₹</span>499
+                           <span className="text-sm font-medium text-white/40 mb-1 ml-1">/ mo</span>
+                        </div>
+                     </div>
+                     <ul className="space-y-4 mb-8 flex-1">
+                        <li className="flex items-start gap-3 text-sm text-white/70"><Check size={18} className="text-emerald-400 shrink-0 mt-0.5" /> <span><strong className="text-white">AI Auto-Replies</strong> (Up to 500 chats/mo)</span></li>
+                        <li className="flex items-start gap-3 text-sm text-white/70"><Check size={18} className="text-emerald-400 shrink-0 mt-0.5" /> <span>Shared Inbox</span></li>
+                        <li className="flex items-start gap-3 text-sm text-white/70"><Check size={18} className="text-emerald-400 shrink-0 mt-0.5" /> <span>Basic Leads Management</span></li>
+                        <li className="flex items-start gap-3 text-sm text-white/70"><Check size={18} className="text-emerald-400 shrink-0 mt-0.5" /> <span>Manual Meta API Setup</span></li>
+                     </ul>
+                     <button 
+                        onClick={() => handleRazorpayCheckout('Starter Plan', 499)}
+                        className="w-full py-3.5 bg-white/10 hover:bg-white/15 text-white font-semibold rounded-xl border border-white/10 transition-all flex items-center justify-center gap-2"
+                     >
+                        Choose Starter
+                     </button>
+                  </div>
+
+                  {/* Pro Plan (Most Popular) */}
+                  <div className="bg-black/60 border border-cyan-500/50 rounded-3xl p-8 backdrop-blur-md flex flex-col relative transform scale-105 shadow-[0_0_40px_rgba(6,182,212,0.15)] z-10 transition-all duration-300 hover:shadow-[0_0_60px_rgba(6,182,212,0.25)]">
+                     <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2">
+                        <span className="bg-gradient-to-r from-cyan-500 to-blue-500 text-white text-[10px] font-bold uppercase tracking-widest py-1 px-4 rounded-full shadow-[0_0_20px_rgba(6,182,212,0.5)] border border-cyan-400/30">
+                           Most Popular
+                        </span>
+                     </div>
+                     <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-cyan-500 to-blue-500 rounded-t-3xl shadow-[0_0_15px_rgba(6,182,212,0.8)]" />
+                     <div className="mb-8 mt-2">
+                        <h3 className="text-xl font-medium text-cyan-400 mb-2">Pro</h3>
+                        <div className="text-4xl font-bold text-white flex items-baseline gap-1">
+                           <span className="text-2xl text-white/50">₹</span>999
+                           <span className="text-sm font-medium text-white/40 mb-1 ml-1">/ mo</span>
+                        </div>
+                     </div>
+                     <ul className="space-y-4 mb-8 flex-1">
+                        <li className="flex items-start gap-3 text-sm text-white/80"><Check size={18} className="text-cyan-400 shrink-0 mt-0.5" /> <span><strong className="text-white">Unlimited</strong> AI Auto-Replies</span></li>
+                        <li className="flex items-start gap-3 text-sm text-white/80"><Check size={18} className="text-cyan-400 shrink-0 mt-0.5" /> <span>Complete Webhook & Meta Connection</span></li>
+                        <li className="flex items-start gap-3 text-sm text-white/80"><Check size={18} className="text-cyan-400 shrink-0 mt-0.5" /> <span>WhatsApp Template Suite (Bulk Sending)</span></li>
+                        <li className="flex items-start gap-3 text-sm text-white/80"><Check size={18} className="text-cyan-400 shrink-0 mt-0.5" /> <span>24/7 Priority Support</span></li>
+                     </ul>
+                     <button 
+                        onClick={() => handleRazorpayCheckout('Pro Plan', 999, 'rzp_live_SmYI9h1s1WboEw')}
+                        className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold rounded-xl hover:from-cyan-400 hover:to-blue-400 transition-all flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(6,182,212,0.4)]"
+                     >
+                        Upgrade to Pro 🚀
+                     </button>
+                  </div>
+
+                  {/* Enterprise Plan */}
+                  <div className="bg-black/45 border border-white/10 rounded-3xl p-8 backdrop-blur-md flex flex-col relative transition-all duration-300 hover:border-white/20">
+                     <div className="mb-8">
+                        <h3 className="text-xl font-medium text-[#25D366] mb-2">Enterprise</h3>
+                        <div className="text-4xl font-bold text-white flex items-baseline gap-1">
+                           <span className="text-2xl text-white/50">₹</span>2,499
+                           <span className="text-sm font-medium text-white/40 mb-1 ml-1">/ mo</span>
+                        </div>
+                     </div>
+                     <ul className="space-y-4 mb-8 flex-1">
+                        <li className="flex items-start gap-3 text-sm text-white/70"><Check size={18} className="text-[#25D366] shrink-0 mt-0.5" /> <span><strong className="text-white">All Pro Features Included</strong></span></li>
+                        <li className="flex items-start gap-3 text-sm text-white/70"><Check size={18} className="text-[#25D366] shrink-0 mt-0.5" /> <span>100% White-Glove Custom Setup by our Engineer</span></li>
+                        <li className="flex items-start gap-3 text-sm text-white/70"><Check size={18} className="text-[#25D366] shrink-0 mt-0.5" /> <span>Dedicated Account Manager</span></li>
+                        <li className="flex items-start gap-3 text-sm text-white/70"><Check size={18} className="text-[#25D366] shrink-0 mt-0.5" /> <span>Priority Tech Support</span></li>
+                     </ul>
+                     <button 
+                        onClick={() => handleRazorpayCheckout('Enterprise Plan', 2499)}
+                        className="w-full py-3.5 bg-white/10 hover:bg-white/15 text-white font-semibold rounded-xl border border-white/10 transition-all flex items-center justify-center gap-2"
+                     >
+                        Get Enterprise
+                     </button>
+                  </div>
+               </div>
+
+               {/* Setup Help Banner */}
+               <div className="bg-gradient-to-r from-[#25D366]/10 to-transparent border border-[#25D366]/20 rounded-3xl p-8 relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div className="absolute -right-20 -top-20 w-64 h-64 bg-[#25D366]/5 rounded-full blur-3xl"></div>
+                  <div className="max-w-2xl relative z-10">
+                     <h3 className="text-xl font-semibold text-white mb-2 flex items-center gap-2">
+                        Need Help with Setup?
+                     </h3>
+                     <p className="text-sm text-white/70 leading-relaxed">
+                        Facing issues with configuration? Get 100% manual setup done by our Deployment Engineer for a one-time premium fee.
+                     </p>
+                  </div>
+                  <a
+                     href="https://wa.me/917065162279"
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     className="relative z-10 flex shrink-0 items-center gap-2 px-6 py-4 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] border border-[#25D366]/30 rounded-2xl transition-all shadow-[0_0_15px_rgba(37,211,102,0.15)] hover:shadow-[0_0_25px_rgba(37,211,102,0.3)] font-semibold"
+                  >
+                     <MessageSquare size={20} />
+                     Click to chat on WhatsApp: +91 7065162279
+                  </a>
                </div>
             </div>
           )}
