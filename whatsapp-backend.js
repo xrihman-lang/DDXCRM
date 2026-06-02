@@ -22,6 +22,7 @@
 
 import express from 'express';
 import cors from 'cors';
+import axios from 'axios';
 
 const app = express();
 app.use(cors());
@@ -67,6 +68,143 @@ app.get('/api/tokens/status/:instanceId', (req, res) => {
     }
     
     res.status(200).json({ success: true, instanceId, connectedAt: data.connectedAt });
+});
+
+/**
+ * API: Create WhatsApp Template
+ * Registers a new message template schema under the specified WhatsApp Business Account.
+ */
+app.post('/api/create-template', async (req, res) => {
+    const { accessToken, wabaId, templateName, category, language, bodyText } = req.body;
+
+    if (!accessToken || !wabaId || !templateName || !category || !language || !bodyText) {
+        console.error('[🚫 Create Template] Missing required parameters:', {
+            hasAccessToken: !!accessToken,
+            wabaId,
+            templateName,
+            category,
+            language,
+            hasBodyText: !!bodyText
+        });
+        return res.status(400).json({ 
+            success: false, 
+            error: 'Missing required parameters. Required: accessToken, wabaId, templateName, category, language, bodyText.' 
+        });
+    }
+
+    try {
+        console.log(`[📡 Create Template] Registering template "${templateName}" on WABA: ${wabaId}...`);
+        
+        const response = await axios.post(
+            `https://graph.facebook.com/v20.0/${wabaId}/message_templates`,
+            {
+                name: templateName,
+                category: category || 'UTILITY',
+                language: language || 'en_US',
+                components: [
+                    {
+                        type: 'BODY',
+                        text: bodyText
+                    }
+                ]
+            },
+            {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        console.log('[✅ Create Template Success] Meta Response:', response.data);
+        res.status(200).json({ success: true, data: response.data });
+    } catch (error) {
+        const errorResponse = error.response ? error.response.data : error.message;
+        console.error('[❌ Create Template Failed] Meta Error:', errorResponse);
+        res.status(error.response?.status || 500).json({ 
+            success: false, 
+            error: errorResponse 
+        });
+    }
+});
+
+/**
+ * API: Send WhatsApp Template Message
+ * Triggers a pre-approved template message to a specific recipient phone number.
+ */
+app.post('/api/send-template', async (req, res) => {
+    const { accessToken, phoneNumberId, recipientPhone, templateName, languageCode, bodyComponents } = req.body;
+
+    if (!accessToken || !phoneNumberId || !recipientPhone || !templateName || !languageCode) {
+        console.error('[🚫 Send Template] Missing required parameters:', {
+            hasAccessToken: !!accessToken,
+            phoneNumberId,
+            recipientPhone,
+            templateName,
+            languageCode
+        });
+        return res.status(400).json({ 
+            success: false, 
+            error: 'Missing required parameters. Required: accessToken, phoneNumberId, recipientPhone, templateName, languageCode.' 
+        });
+    }
+
+    try {
+        console.log(`[📡 Send Template] Dispatching template "${templateName}" to ${recipientPhone} via ID: ${phoneNumberId}...`);
+
+        let paramsForMeta = [];
+        if (Array.isArray(bodyComponents)) {
+            paramsForMeta = bodyComponents.map(param => {
+                if (typeof param === 'string' || typeof param === 'number') {
+                    return { type: 'text', text: String(param) };
+                }
+                return param;
+            });
+        }
+
+        const templatePayload = {
+            messaging_product: 'whatsapp',
+            recipient_type: 'individual',
+            to: recipientPhone,
+            type: 'template',
+            template: {
+                name: templateName,
+                language: {
+                    code: languageCode
+                }
+            }
+        };
+
+        if (paramsForMeta.length > 0) {
+            templatePayload.template.components = [
+                {
+                    type: 'body',
+                    parameters: paramsForMeta
+                }
+            ];
+        }
+
+        const response = await axios.post(
+            `https://graph.facebook.com/v20.0/${phoneNumberId}/messages`,
+            templatePayload,
+            {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
+
+        console.log('[✅ Send Template Success] Meta Response:', response.data);
+        res.status(200).json({ success: true, data: response.data });
+    } catch (error) {
+        const errorResponse = error.response ? error.response.data : error.message;
+        console.error('[❌ Send Template Failed] Meta Error:', errorResponse);
+        res.status(error.response?.status || 500).json({ 
+            success: false, 
+            error: errorResponse 
+        });
+    }
 });
 
 /**

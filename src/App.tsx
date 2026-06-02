@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Mic, MicOff, Loader2, Volume2, VolumeX, Keyboard, Send, Trash2, LayoutDashboard, Users, BarChart3, Settings, LogOut, Search, Bell, MessageSquare, X, HelpCircle, Copy, Check } from "lucide-react";
+import { Mic, MicOff, Loader2, Volume2, VolumeX, Keyboard, Send, Trash2, LayoutDashboard, Users, BarChart3, Settings, LogOut, Search, Bell, MessageSquare, X, HelpCircle, Copy, Check, FileText, PlusCircle } from "lucide-react";
 import { getZoyaResponse, getZoyaAudio, resetZoyaSession, setZoyaKnowledgeBase } from "./services/geminiService";
 import { processCommand } from "./services/commandService";
 import { LiveSessionManager, setLiveZoyaKnowledgeBase } from "./services/liveService";
@@ -28,7 +28,7 @@ declare global {
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(() => localStorage.getItem("gdx_auth") === "true");
-  const [activeTab, setActiveTab] = useState<"dashboard" | "shared_inbox" | "leads" | "settings">("dashboard");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "shared_inbox" | "leads" | "settings" | "templates">("dashboard");
   const [knowledgeBase, setKnowledgeBase] = useState(() => localStorage.getItem("gdx_knowledge_base") || "");
   const [backendUrl, setBackendUrl] = useState(() => localStorage.getItem("gdx_backend_url") || "https://ddxcrm.onrender.com");
   const [phoneNumberId, setPhoneNumberId] = useState(() => localStorage.getItem("gdx_phone_number_id") || "");
@@ -42,9 +42,178 @@ export default function App() {
   const [showSetupModal, setShowSetupModal] = useState(false);
   const [isTokenCopied, setIsTokenCopied] = useState(false);
   const [selectedLead, setSelectedLead] = useState<any>(null);
+
+  // WhatsApp Templates States
+  const [templates, setTemplates] = useState<{name: string, category: string, language: string, bodyText: string}[]>(() => {
+    const saved = localStorage.getItem("gdx_templates");
+    return saved ? JSON.parse(saved) : [
+      { name: "welcome_message", category: "UTILITY", language: "en_US", bodyText: "Hello {{1}}, welcome to GDX CRM! your account registration is successful." },
+      { name: "order_confirmation", category: "UTILITY", language: "en_US", bodyText: "Hi {{1}}, order #{{2}} is confirmed. Total amount: {{3}}. Thank you for shopping with us!" }
+    ];
+  });
+
+  const [newTemplateName, setNewTemplateName] = useState("");
+  const [newTemplateCategory, setNewTemplateCategory] = useState("UTILITY");
+  const [newTemplateLanguage, setNewTemplateLanguage] = useState("en_US");
+  const [newTemplateBody, setNewTemplateBody] = useState("");
+  const [isCreatingTemplate, setIsCreatingTemplate] = useState(false);
+  const [createTemplateError, setCreateTemplateError] = useState("");
+  const [createTemplateSuccess, setCreateTemplateSuccess] = useState("");
+
+  const [selectedTemplateName, setSelectedTemplateName] = useState("");
+  const [recipientPhone, setRecipientPhone] = useState("");
+  const [templateVariables, setTemplateVariables] = useState<{[key: string]: string}>({});
+  const [isSendingTemplate, setIsSendingTemplate] = useState(false);
+  const [sendTemplateError, setSendTemplateError] = useState("");
+  const [sendTemplateSuccess, setSendTemplateSuccess] = useState("");
+
+  // Helper: Find design parameters (e.g. {{1}}, {{2}})
+  const getTemplateVariables = (bodyText: string): string[] => {
+    const vars: string[] = [];
+    const regex = /\{\{(\d+)\}\}/g;
+    let match;
+    while ((match = regex.exec(bodyText)) !== null) {
+      if (!vars.includes(match[1])) {
+        vars.push(match[1]);
+      }
+    }
+    return vars.sort((a, b) => parseInt(a) - parseInt(b));
+  };
+
+  const handleCreateTemplate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCreateTemplateError("");
+    setCreateTemplateSuccess("");
+    
+    if (!metaAccessToken || !wabaId) {
+      setCreateTemplateError("Please configure Meta Access Token and WABA ID in the Settings tab first!");
+      return;
+    }
+    if (!newTemplateName) {
+      setCreateTemplateError("Template name is required.");
+      return;
+    }
+
+    // Format to lowercase, letters/numbers/underscores only
+    const cleanName = newTemplateName.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, "");
+    if (!newTemplateBody) {
+      setCreateTemplateError("Template body text is required.");
+      return;
+    }
+
+    setIsCreatingTemplate(true);
+    try {
+      const targetUrl = backendUrl.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
+      const res = await fetch(`${targetUrl}/api/create-template`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accessToken: metaAccessToken,
+          wabaId,
+          templateName: cleanName,
+          category: newTemplateCategory,
+          language: newTemplateLanguage,
+          bodyText: newTemplateBody
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok || data.success === false) {
+        throw new Error(data.error?.error?.message || data.error?.message || data.error || "Failed registration on Meta API");
+      }
+
+      const addedTemplate = {
+        name: cleanName,
+        category: newTemplateCategory,
+        language: newTemplateLanguage,
+        bodyText: newTemplateBody
+      };
+
+      const updated = [...templates.filter(t => t.name !== cleanName), addedTemplate];
+      setTemplates(updated);
+      localStorage.setItem("gdx_templates", JSON.stringify(updated));
+
+      setCreateTemplateSuccess(`🎉 Template "${cleanName}" submitted successfully & saved locally!`);
+      setNewTemplateName("");
+      setNewTemplateBody("");
+    } catch (err: any) {
+      console.error("Template creation error:", err);
+      setCreateTemplateError(`⚠️ Meta Error: ${err.message || err.toString()}`);
+    } finally {
+      setIsCreatingTemplate(false);
+    }
+  };
+
+  const handleSendTemplate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSendTemplateError("");
+    setSendTemplateSuccess("");
+
+    if (!metaAccessToken || !phoneNumberId) {
+      setSendTemplateError("Please configure Meta Access Token and Phone ID in the Settings tab first!");
+      return;
+    }
+    if (!selectedTemplateName) {
+      setSendTemplateError("Please select a template to dispatch.");
+      return;
+    }
+    if (!recipientPhone) {
+      setSendTemplateError("Recipient Phone Number is required.");
+      return;
+    }
+
+    const templateObj = templates.find(t => t.name === selectedTemplateName);
+    if (!templateObj) {
+      setSendTemplateError("Selected template details not found.");
+      return;
+    }
+
+    const vars = getTemplateVariables(templateObj.bodyText);
+    const bodyComponents: string[] = [];
+    
+    for (const v of vars) {
+      const val = templateVariables[v];
+      if (val === undefined || val === null || val.trim() === "") {
+        setSendTemplateError(`Please provide reference text for variable {{${v}}}.`);
+        return;
+      }
+      bodyComponents.push(val.trim());
+    }
+
+    setIsSendingTemplate(true);
+    try {
+      const targetUrl = backendUrl.endsWith('/') ? backendUrl.slice(0, -1) : backendUrl;
+      const res = await fetch(`${targetUrl}/api/send-template`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accessToken: metaAccessToken,
+          phoneNumberId,
+          recipientPhone: recipientPhone.trim(),
+          templateName: selectedTemplateName,
+          languageCode: templateObj.language || "en_US",
+          bodyComponents
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok || data.success === false) {
+        throw new Error(data.error?.error?.message || data.error?.message || data.error || "Failed sending template via Meta");
+      }
+
+      setSendTemplateSuccess(`🚀 Template Message "${selectedTemplateName}" dispatched successfully!`);
+      setRecipientPhone("");
+      setTemplateVariables({});
+    } catch (err: any) {
+      console.error("Template dispatch error:", err);
+      setSendTemplateError(`⚠️ dispatch Failed: ${err.message || err.toString()}`);
+    } finally {
+      setIsSendingTemplate(false);
+    }
+  };
   
-  const [simMessages, setSimMessages] = useState<{id: string, sender: 'customer' | 'bot', text: string}[]>([]);
-  const [simInput, setSimInput] = useState("");
+	const [simMessages, setSimMessages] = useState<{id: string, sender: 'customer' | 'bot', text: string}[]>([]);
+	const [simInput, setSimInput] = useState("");
 
   const LEADS = [
     { name: "Acme Corp", contact: "sarah@acme.co", status: "🔥 Hot Lead", amount: "₹1,20,000", agent: "ZS", agentName: "Zishan", messages: [{sender:"user", text:"Can we get a discount?"},{sender:"zoya", text:"Let me check current promos... \n\n— Sent via GDX Automation"}] },
@@ -568,6 +737,13 @@ export default function App() {
             <span className="font-medium text-sm">Leads</span>
           </button>
           <button 
+            onClick={() => setActiveTab("templates")}
+            className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'templates' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'hover:bg-white/5 text-white/70 hover:text-white border border-transparent'}`}
+          >
+            <FileText size={18} />
+            <span className="font-medium text-sm">WA Templates</span>
+          </button>
+          <button 
             onClick={() => setActiveTab("settings")}
             className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${activeTab === 'settings' ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' : 'hover:bg-white/5 text-white/70 hover:text-white border border-transparent'}`}
           >
@@ -695,6 +871,7 @@ export default function App() {
             {activeTab === 'dashboard' && 'Dashboard Overview'}
             {activeTab === 'shared_inbox' && 'Shared Inbox / Simulations'}
             {activeTab === 'leads' && 'Active Leads'}
+            {activeTab === 'templates' && 'WhatsApp Templates'}
             {activeTab === 'settings' && 'System Settings'}
           </h2>
           <div className="flex items-center gap-6">
@@ -723,6 +900,255 @@ export default function App() {
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto custom-scrollbar relative">
           
+          {activeTab === 'templates' && (
+            <div className="p-8 font-sans max-w-7xl mx-auto">
+               <div className="mb-8">
+                  <h2 className="text-3xl font-bold tracking-tight text-white flex items-center gap-3">
+                     <FileText className="text-cyan-400" size={32} />
+                     WhatsApp Templates Management
+                  </h2>
+                  <p className="text-sm text-white/50 mt-2">Create custom message layouts and dispatch approved templates to your leads using the Meta Cloud API integration.</p>
+               </div>
+
+               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+                  
+                  {/* Left Column: Create Template Form */}
+                  <div className="bg-black/45 border border-white/10 rounded-3xl p-8 backdrop-blur-md shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col gap-6 relative overflow-hidden group">
+                     <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-emerald-500/50 to-cyan-500/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                     
+                     <div>
+                        <h3 className="text-xl font-semibold text-white mb-1 flex items-center gap-2">
+                           <PlusCircle className="text-emerald-400" size={20} />
+                           Create New Template
+                        </h3>
+                        <p className="text-xs text-white/40">Register a new template pattern with your Meta developer account.</p>
+                     </div>
+
+                     <form onSubmit={handleCreateTemplate} className="space-y-5">
+                        <div className="flex flex-col gap-2">
+                           <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">Template Name</label>
+                           <input 
+                              type="text"
+                              value={newTemplateName}
+                              onChange={(e) => setNewTemplateName(e.target.value.toLowerCase().replace(/\s+/g, "_").replace(/[^a-z0-9_]/g, ""))}
+                              className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all font-mono placeholder:text-white/20"
+                              placeholder="e.g. order_success"
+                              required
+                           />
+                           <span className="text-[10px] text-white/40 font-medium font-sans">Meta rule: Lowercase letters, numbers, and underscores only.</span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                           <div className="flex flex-col gap-2">
+                              <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">Category</label>
+                              <select 
+                                 value={newTemplateCategory}
+                                 onChange={(e) => setNewTemplateCategory(e.target.value)}
+                                 className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all cursor-pointer"
+                              >
+                                 <option value="UTILITY">Utility</option>
+                                 <option value="MARKETING">Marketing</option>
+                              </select>
+                           </div>
+                           <div className="flex flex-col gap-2">
+                              <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">Language</label>
+                              <select 
+                                 value={newTemplateLanguage}
+                                 onChange={(e) => setNewTemplateLanguage(e.target.value)}
+                                 className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all cursor-pointer"
+                              >
+                                 <option value="en_US">English (US)</option>
+                                 <option value="hi_IN">Hindi (IN)</option>
+                                 <option value="es_ES">Spanish (ES)</option>
+                                 <option value="ar_AE">Arabic (AE)</option>
+                              </select>
+                           </div>
+                        </div>
+
+                        <div className="flex flex-col gap-2">
+                           <div className="flex justify-between items-center">
+                              <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">Template Body Text</label>
+                              <span className="text-[10px] text-cyan-400 font-semibold bg-cyan-400/10 px-2 py-0.5 rounded">Dynamic Support</span>
+                           </div>
+                           <textarea 
+                              value={newTemplateBody}
+                              onChange={(e) => setNewTemplateBody(e.target.value)}
+                              rows={4}
+                              className="w-full bg-black/60 border border-white/10 rounded-xl p-4 text-sm text-white focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/30 transition-all placeholder:text-white/20 custom-scrollbar"
+                              placeholder="Hi {{1}}, thank you for buying {{2}}. Your tracking ID is {{3}}."
+                              required
+                           />
+                           <p className="text-[11px] text-[#25D366] font-medium leading-relaxed bg-[#25D366]/5 p-3 rounded-lg border border-[#25D366]/10">
+                              ℹ️ <strong>Heads up:</strong> Use {"{{1}}"}, {"{{2}}"} etc., to match your variables block. These can be filled with customer details later during dispatch!
+                           </p>
+                        </div>
+
+                        {createTemplateError && (
+                           <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-xs font-medium">
+                              {createTemplateError}
+                           </div>
+                        )}
+                        {createTemplateSuccess && (
+                           <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-medium">
+                              {createTemplateSuccess}
+                           </div>
+                        )}
+
+                        <button 
+                           type="submit"
+                           disabled={isCreatingTemplate}
+                           className="w-full py-3.5 bg-[#25D366] text-black font-semibold rounded-xl hover:bg-[#20ba59] active:scale-[0.99] disabled:opacity-50 transition-all duration-200 shadow-[0_4px_20px_rgba(37,211,102,0.3)] flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                           {isCreatingTemplate ? (
+                              <>
+                                 <Loader2 className="animate-spin text-black" size={18} />
+                                 <span>Submitting to Meta...</span>
+                              </>
+                           ) : (
+                              <span>Submit to Meta for Approval ✔️</span>
+                           )}
+                        </button>
+                     </form>
+                  </div>
+
+                  {/* Right Column: Send Template Quick Form */}
+                  <div className="bg-black/45 border border-white/10 rounded-3xl p-8 backdrop-blur-md shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col gap-6 relative overflow-hidden group">
+                     <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-cyan-500/50 to-blue-500/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                     
+                     <div>
+                        <h3 className="text-xl font-semibold text-white mb-1 flex items-center gap-2">
+                           <Send size={18} className="text-cyan-400" />
+                           Send Template Message
+                        </h3>
+                        <p className="text-xs text-white/40">Instantly trigger an approved template to a customer's phone line.</p>
+                     </div>
+
+                     <form onSubmit={handleSendTemplate} className="space-y-5">
+                        <div className="flex flex-col gap-2">
+                           <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">Select template pattern</label>
+                           <select 
+                              value={selectedTemplateName}
+                              onChange={(e) => {
+                                 setSelectedTemplateName(e.target.value);
+                                 setTemplateVariables({});
+                                 setSendTemplateError("");
+                                 setSendTemplateSuccess("");
+                              }}
+                              className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all cursor-pointer"
+                              required
+                           >
+                              <option value="">-- Choose template --</option>
+                              {templates.map(t => (
+                                 <option key={t.name} value={t.name}>{t.name} ({t.category})</option>
+                              ))}
+                           </select>
+                        </div>
+
+                        {/* Live Template Preview Container if one is selected */}
+                        {selectedTemplateName && (() => {
+                           const activeTpl = templates.find(t => t.name === selectedTemplateName);
+                           if (!activeTpl) return null;
+
+                           let previewText = activeTpl.bodyText;
+                           const vars = getTemplateVariables(activeTpl.bodyText);
+                           vars.forEach(v => {
+                              const placeholderVal = templateVariables[v] || `[Variable ${v}]`;
+                              previewText = previewText.replace(`{{${v}}}`, placeholderVal);
+                           });
+
+                           return (
+                              <div className="bg-[#0b141a] border border-white/5 rounded-2xl p-4 flex flex-col gap-2">
+                                 <span className="text-[10px] text-white/30 uppercase tracking-widest font-semibold flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#25D366]" />
+                                    Live Message Preview
+                                 </span>
+                                 <div className="bg-[#111b21] rounded-xl p-4 text-xs font-medium text-white/90 shadow-inner relative max-w-xs self-start border border-white/5 whitespace-pre-wrap">
+                                    <div className="absolute top-2 right-2 w-2 h-2 rounded-full cursor-help bg-white/10" />
+                                    <p className="leading-relaxed">{previewText}</p>
+                                    <span className="block text-right text-[9px] text-white/40 mt-1.5 font-mono">11:30 AM ✔️</span>
+                                 </div>
+                              </div>
+                           );
+                        })()}
+
+                        {/* Custom Dynamic Variable Fields */}
+                        {selectedTemplateName && (() => {
+                           const activeTpl = templates.find(t => t.name === selectedTemplateName);
+                           if (!activeTpl) return null;
+                           const vars = getTemplateVariables(activeTpl.bodyText);
+                           if (vars.length === 0) return null;
+
+                           return (
+                              <div className="space-y-4 bg-white/5 p-4 rounded-xl border border-white/5">
+                                 <h4 className="text-xs font-bold text-white/70 uppercase tracking-wide mb-1 flex items-center gap-1">
+                                    <span>🧩 Template Parameters</span>
+                                 </h4>
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    {vars.map(v => (
+                                       <div key={v} className="flex flex-col gap-1.5">
+                                          <label className="text-[10px] text-white/50 font-mono">Value for {"{"}{"{"}{v}{"}"}{"}"}</label>
+                                          <input 
+                                             type="text"
+                                             value={templateVariables[v] || ""}
+                                             onChange={(e) => setTemplateVariables({
+                                                ...templateVariables,
+                                                [v]: e.target.value
+                                             })}
+                                             className="w-full bg-black/60 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500/50 transition-all placeholder:text-white/20"
+                                             placeholder={`eg. value for {{${v}}}`}
+                                             required
+                                          />
+                                       </div>
+                                    ))}
+                                 </div>
+                              </div>
+                           );
+                        })()}
+
+                        <div className="flex flex-col gap-2">
+                           <label className="text-xs font-semibold text-white/70 uppercase tracking-wider">Recipient Phone Number</label>
+                           <input 
+                              type="tel"
+                              value={recipientPhone}
+                              onChange={(e) => setRecipientPhone(e.target.value)}
+                              className="w-full bg-black/60 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/30 transition-all placeholder:text-white/20"
+                              placeholder="e.g. +919876543210 (include country code)"
+                              required
+                           />
+                        </div>
+
+                        {sendTemplateError && (
+                           <div className="p-3 bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl text-xs font-medium">
+                              {sendTemplateError}
+                           </div>
+                        )}
+                        {sendTemplateSuccess && (
+                           <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xs font-medium">
+                              {sendTemplateSuccess}
+                           </div>
+                        )}
+
+                        <button 
+                           type="submit"
+                           disabled={isSendingTemplate}
+                           className="w-full py-3.5 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold rounded-xl hover:from-cyan-400 hover:to-blue-400 active:scale-[0.99] disabled:opacity-50 transition-all duration-200 shadow-[0_4px_20px_rgba(6,182,212,0.3)] flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                           {isSendingTemplate ? (
+                              <>
+                                 <Loader2 className="animate-spin text-white" size={18} />
+                                 <span>Sending dispatch...</span>
+                              </>
+                           ) : (
+                              <span>Send Template Message 🚀</span>
+                           )}
+                        </button>
+                     </form>
+                  </div>
+
+               </div>
+            </div>
+          )}
+
           {activeTab === 'settings' && (
             <div className="p-8 font-sans max-w-4xl">
                <h2 className="text-2xl font-semibold mb-6">GDX System Settings</h2>

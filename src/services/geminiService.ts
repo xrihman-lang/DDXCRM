@@ -15,7 +15,7 @@ export function resetZoyaSession() {
 
 export async function getZoyaResponse(prompt: string, history: { sender: "user" | "zoya", text: string }[] = []): Promise<string> {
   try {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== "undefined" ? process.env.GEMINI_API_KEY : "");
+    const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (typeof process !== "undefined" ? process.env.GEMINI_API_KEY : "");
     if (!apiKey) {
       console.error("VITE_GEMINI_API_KEY is missing in Vercel Environment Variables");
       return "Zoya needs a Gemini API Key to work! Vercel me VITE_GEMINI_API_KEY set karein.";
@@ -84,7 +84,7 @@ export async function getZoyaResponse(prompt: string, history: { sender: "user" 
 
 export async function getZoyaAudio(text: string): Promise<string | null> {
   try {
-    const apiKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof process !== "undefined" ? process.env.GEMINI_API_KEY : "");
+    const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || (typeof process !== "undefined" ? process.env.GEMINI_API_KEY : "");
     if (!apiKey) {
       console.error("VITE_GEMINI_API_KEY is missing");
       return null;
