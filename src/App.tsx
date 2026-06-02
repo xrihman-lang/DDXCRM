@@ -830,7 +830,7 @@ export default function App() {
       </div>
 
       {/* Sidebar */}
-      <aside className="w-64 border-r border-white/10 bg-black/40 backdrop-blur-xl flex flex-col z-10 shrink-0">
+      <aside className="w-64 border-r border-white/10 bg-black/40 backdrop-blur-xl flex flex-col z-10 flex-shrink-0">
         <div className="p-6 border-b border-white/10 flex flex-col items-start">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center font-bold tracking-tighter text-black shadow-[0_0_15px_rgba(6,182,212,0.6)]">
@@ -993,7 +993,7 @@ export default function App() {
       </aside>
 
       {/* Main Container */}
-      <main className="flex-1 flex flex-col z-10 relative overflow-hidden">
+      <main className="flex-1 flex flex-col h-screen min-w-0 z-10 relative overflow-hidden">
         {configStatus && (
           <div className="absolute top-6 right-6 z-50 animate-in fade-in slide-in-from-top-4 duration-300">
             <div className={`px-5 py-3 rounded-xl shadow-2xl border backdrop-blur-md font-medium tracking-wide flex items-center gap-3 ${
@@ -1039,7 +1039,10 @@ export default function App() {
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto custom-scrollbar relative">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 lg:p-6 overflow-y-auto h-[calc(100vh-80px)] custom-scrollbar relative min-w-0">
+          
+          {/* Main Workspace (Left) */}
+          <div className="lg:col-span-8 flex-col flex min-w-0 order-2 lg:order-1 w-full">
           
           {activeTab === 'templates' && (
             <div className="p-8 font-sans max-w-7xl mx-auto">
@@ -1577,7 +1580,7 @@ export default function App() {
                </div>
                
                <div className="w-full bg-black/40 border border-white/10 rounded-3xl overflow-hidden backdrop-blur-md">
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto overflow-y-auto max-h-[calc(100vh-220px)] custom-scrollbar">
                      <table className="w-full text-left border-collapse">
                         <thead>
                            <tr className="border-b border-white/10 bg-black/20 text-sm tracking-wide text-white/50">
@@ -1656,15 +1659,15 @@ export default function App() {
               </div>
 
               {/* Main Panels */}
-              <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 h-[500px]">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
                  
                  {/* Left Panel: Recent Leads */}
-                 <div className="xl:col-span-2 bg-black/40 border border-white/10 rounded-3xl p-6 flex flex-col backdrop-blur-md">
+                 <div className="md:col-span-12 xl:col-span-8 bg-black/40 border border-white/10 rounded-3xl p-6 flex flex-col backdrop-blur-md">
                     <h3 className="text-lg font-medium mb-6 flex items-center gap-2">
                       <Users size={18} className="text-cyan-400" />
                       Recent High-Value Leads
                     </h3>
-                    <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-3">
+                    <div className="flex-1 overflow-y-auto max-h-[calc(100vh-120px)] custom-scrollbar pr-2 space-y-3">
                       {LEADS.map((lead, i) => (
                         <div 
                           key={i} 
@@ -1686,8 +1689,14 @@ export default function App() {
                     </div>
                  </div>
 
-                 {/* Right Panel: GDX AI Pipeline Log */}
-                 <div className="bg-black/60 border border-cyan-500/30 rounded-3xl p-6 flex flex-col backdrop-blur-xl relative overflow-hidden shadow-[0_0_30px_rgba(6,182,212,0.05)]">
+              </div>
+            </div>
+          )}
+          </div>
+
+          {/* Right Pipeline (Right) */}
+          <div className="lg:col-span-4 min-w-0 order-1 lg:order-2 flex flex-col h-[600px] lg:h-[calc(100vh-120px)] w-full relative">
+                 <div className="flex-1 bg-black/60 border border-cyan-500/30 rounded-3xl p-6 flex flex-col backdrop-blur-xl relative overflow-hidden shadow-[0_0_30px_rgba(6,182,212,0.05)]">
                     <div className="absolute top-0 right-0 p-4 opacity-10 pointer-events-none">
                       <div className="w-48 h-48 bg-cyan-500 rounded-full blur-[80px]" />
                     </div>
@@ -1708,7 +1717,7 @@ export default function App() {
                       </button>
                     </h3>
                     
-                    <div className="flex-1 overflow-y-auto custom-scrollbar space-y-4 pr-2 z-10 flex flex-col">
+                    <div className="flex-1 overflow-y-auto max-h-[calc(100vh-220px)] custom-scrollbar space-y-4 pr-2 z-10 flex flex-col">
                       {messages.length === 0 ? (
                         <div className="m-auto text-center text-white/30 text-sm">
                           <p>Pipeline is currently empty.</p>
@@ -1735,10 +1744,7 @@ export default function App() {
                       <div ref={messagesEndRef} />
                     </div>
                  </div>
-
-              </div>
-            </div>
-          )}
+          </div>
         </div>
 
         {/* Kanban Drawer Overlay */}
