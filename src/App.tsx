@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Mic, MicOff, Loader2, Volume2, VolumeX, Keyboard, Send, Trash2, LayoutDashboard, Users, BarChart3, Settings, LogOut, Search, Bell, MessageSquare, X, HelpCircle, Copy, Check, FileText, PlusCircle, CreditCard, ExternalLink } from "lucide-react";
+import { Mic, MicOff, Loader2, Volume2, VolumeX, Keyboard, Send, Trash2, LayoutDashboard, Users, BarChart3, Settings, LogOut, Search, Bell, MessageSquare, X, HelpCircle, Copy, Check, FileText, PlusCircle, CreditCard, ExternalLink, ArrowUpRight, Zap, CheckCircle2 } from "lucide-react";
 import { getZoyaResponse, getZoyaAudio, resetZoyaSession, setZoyaKnowledgeBase } from "./services/geminiService";
 import { processCommand } from "./services/commandService";
 import { LiveSessionManager, setLiveZoyaKnowledgeBase } from "./services/liveService";
@@ -741,8 +741,23 @@ export default function App() {
                 <div className="overflow-y-auto custom-scrollbar flex-1 pr-4 space-y-8">
                    <div>
                       <h4 className="text-lg font-medium text-cyan-400 mb-2">Privacy Policy</h4>
-                      <p className="text-sm text-white/70 leading-relaxed">
+                      <p className="text-sm text-white/70 leading-relaxed mb-4">
                          We collect user registration data, email, and WhatsApp business API details securely to provide automated CRM services. We never share user data with third parties.
+                      </p>
+
+                      <h5 className="text-base font-medium text-white mb-2">Enterprise Data Isolation & Safety</h5>
+                      <p className="text-sm text-white/70 leading-relaxed mb-4">
+                         For "DDX Enterprise / Fully Managed" clients, all custom workflows, connected webhooks, and private Google Sheets data are strictly isolated and encrypted. Data logs processed by our team during continuous optimization are auto-deleted after 30 days.
+                      </p>
+
+                      <h5 className="text-base font-medium text-white mb-2">Confidentiality & Non-Disclosure (NDA)</h5>
+                      <p className="text-sm text-white/70 leading-relaxed mb-4">
+                         For VIP Managed Services, DDX Team signs a separate corporate Non-Disclosure Agreement (NDA) before integration setup begins, ensuring 100% data confidentiality and zero third-party sharing.
+                      </p>
+
+                      <h5 className="text-base font-medium text-white mb-2">Meta API & Compliance</h5>
+                      <p className="text-sm text-white/70 leading-relaxed">
+                         All enterprise WhatsApp Cloud API setups strictly adhere to Meta's Official Developer Policies, and customer consent is mandatory for business notifications.
                       </p>
                    </div>
                    
@@ -1450,27 +1465,59 @@ export default function App() {
                      </button>
                   </div>
 
-                  {/* Enterprise Plan */}
-                  <div className="bg-black/45 border border-white/10 rounded-3xl p-8 backdrop-blur-md flex flex-col relative transition-all duration-300 hover:border-white/20">
-                     <div className="mb-8">
-                        <h3 className="text-xl font-medium text-[#25D366] mb-2">Enterprise</h3>
-                        <div className="text-4xl font-bold text-white flex items-baseline gap-1">
-                           <span className="text-2xl text-white/50">₹</span>2,499
-                           <span className="text-sm font-medium text-white/40 mb-1 ml-1">/ mo</span>
+                  {/* VIP Enterprise Plan */}
+                  <div className="bg-white rounded-3xl p-8 backdrop-blur-md flex flex-col relative transition-all duration-300 hover:shadow-[0_0_30px_rgba(255,215,0,0.15)] border-2 border-transparent hover:border-yellow-500/50 overflow-hidden" 
+                       style={{ background: "linear-gradient(to bottom right, #ffffff, #f8f9fa)" }}>
+                     <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-yellow-400 via-yellow-200 to-yellow-500"></div>
+                     <div className="mb-6">
+                        <div className="flex justify-between items-start mb-2">
+                           <h3 className="text-xl font-bold text-gray-900">DDX Enterprise (Fully Managed)</h3>
+                           <span className="bg-yellow-100 text-yellow-800 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">Most Value for Corporations</span>
+                        </div>
+                        <div className="text-xl font-bold text-gray-900 mt-4 mb-2">
+                           Custom Quote
+                        </div>
+                        <div className="text-sm font-medium text-gray-500">
+                           (₹20,000 - ₹30,000 / month)
                         </div>
                      </div>
+
+                     {/* Live AI Demo Badge */}
+                     <a href="https://wa.me/918796505884" target="_blank" rel="noreferrer" className="mb-6 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 rounded-xl p-3 flex flex-col items-center justify-center transition-colors group text-center">
+                        <span className="text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-1 group-hover:hidden">
+                           <Zap size={14} className="text-blue-500" /> Test Live AI Assistant Demo
+                        </span>
+                        <span className="text-sm font-bold hidden group-hover:flex items-center gap-2">
+                           +91 87965 05884 <ArrowUpRight size={16} />
+                        </span>
+                     </a>
+
                      <ul className="space-y-4 mb-8 flex-1">
-                        <li className="flex items-start gap-3 text-sm text-white/70"><Check size={18} className="text-[#25D366] shrink-0 mt-0.5" /> <span><strong className="text-white">All Pro Features Included</strong></span></li>
-                        <li className="flex items-start gap-3 text-sm text-white/70"><Check size={18} className="text-[#25D366] shrink-0 mt-0.5" /> <span>100% White-Glove Custom Setup by our Engineer</span></li>
-                        <li className="flex items-start gap-3 text-sm text-white/70"><Check size={18} className="text-[#25D366] shrink-0 mt-0.5" /> <span>Dedicated Account Manager</span></li>
-                        <li className="flex items-start gap-3 text-sm text-white/70"><Check size={18} className="text-[#25D366] shrink-0 mt-0.5" /> <span>Priority Tech Support</span></li>
+                        <li className="flex items-start gap-3 text-sm text-gray-700">
+                           <CheckCircle2 size={18} className="text-green-600 shrink-0 mt-0.5" /> 
+                           <span><strong className="text-gray-900">Full Custom Workflow Architecture</strong> (Done-For-You)</span>
+                        </li>
+                        <li className="flex items-start gap-3 text-sm text-gray-700">
+                           <CheckCircle2 size={18} className="text-green-600 shrink-0 mt-0.5" /> 
+                           <span>Advanced Google Sheets & Multi-Channel Webhook Sync</span>
+                        </li>
+                        <li className="flex items-start gap-3 text-sm text-gray-700">
+                           <CheckCircle2 size={18} className="text-green-600 shrink-0 mt-0.5" /> 
+                           <span>Meta Cloud API Setup & Official Green Tick Assistance</span>
+                        </li>
+                        <li className="flex items-start gap-3 text-sm text-gray-700">
+                           <CheckCircle2 size={18} className="text-green-600 shrink-0 mt-0.5" /> 
+                           <span>Dedicated Daily Operations Manager & Tech Support Staff</span>
+                        </li>
                      </ul>
-                     <button 
-                        onClick={() => handleRazorpayCheckout('Enterprise Plan', 2499)}
-                        className="w-full py-3.5 bg-white/10 hover:bg-white/15 text-white font-semibold rounded-xl border border-white/10 transition-all flex items-center justify-center gap-2"
+                     <a 
+                        href="https://wa.me/917065162279?text=Hello%20DDX%20Team,%20I%20am%20interested%20in%20the%20fully%20managed%20Enterprise%20Plan%20for%20my%20business."
+                        target="_blank"
+                        rel="noreferrer"
+                        className="w-full py-4 bg-gray-900 hover:bg-black text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 shadow-xl shadow-black/10"
                      >
-                        Get Enterprise
-                     </button>
+                        Book VIP Consultation
+                     </a>
                   </div>
                </div>
 
