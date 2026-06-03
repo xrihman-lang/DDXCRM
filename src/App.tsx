@@ -91,7 +91,7 @@ export default function App() {
       }
       
       const options = {
-        key: 'rzp_live_SmYI9h1s1WboEw',
+        key: import.meta.env.VITE_RAZORPAY_KEY_ID || customKey || '',
         amount: amount * 100, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
         currency: 'INR',
         name: 'GDX CRM',
@@ -118,6 +118,9 @@ export default function App() {
       
       try {
         const rzp = new (window as any).Razorpay(options);
+        rzp.on('payment.failed', function (response: any) {
+          console.error("Razorpay Payment Failed:", response.error);
+        });
         rzp.open();
       } catch (error) {
         console.error("Error initializing Razorpay", error);
@@ -1583,7 +1586,7 @@ export default function App() {
                         <li className="flex items-start gap-3 text-sm text-white/80"><Check size={18} className="text-cyan-400 shrink-0 mt-0.5" /> <span>24/7 Priority Support</span></li>
                      </ul>
                      <button 
-                        onClick={() => handleRazorpayCheckout('Pro Plan', 999, 'rzp_live_SmYI9h1s1WboEw')}
+                        onClick={() => handleRazorpayCheckout('Pro Plan', 999)}
                         className="w-full py-4 bg-gradient-to-r from-cyan-500 to-blue-500 text-white font-semibold rounded-xl hover:from-cyan-400 hover:to-blue-400 transition-all flex items-center justify-center gap-2 shadow-[0_4px_20px_rgba(6,182,212,0.4)]"
                      >
                         Upgrade to Pro 🚀
