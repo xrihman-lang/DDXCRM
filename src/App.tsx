@@ -91,7 +91,7 @@ export default function App() {
       }
       
       const options = {
-        key: import.meta.env.VITE_RAZORPAY_KEY_ID || customKey || '',
+        key: (import.meta as any).env.VITE_RAZORPAY_KEY_ID || customKey || 'rzp_live_SmYI9h1s1WboEw',
         amount: amount * 100, // Amount is in currency subunits. Default currency is INR. Hence, 50000 refers to 50000 paise
         currency: 'INR',
         name: 'GDX CRM',
